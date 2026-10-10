@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>llms.txt generator</title>
+<meta name="description" content="Free, client-side llms.txt generator by Aurum Digital.">
+<style>
+:root{--bg:#f6f4ef;--fg:#16140f;--muted:#6b645a;--line:#ddd6ca;--tile:#fffdf9;--accent:#8c6b30;--font:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#0d0c0a;--fg:#f1ece4;--muted:#a1998d;--line:#2b2722;--tile:#16140f;--accent:#d4b47a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 var(--font);padding:0 16px}
+main{max-width:760px;margin:0 auto;padding:48px 0 72px}
+h1{font-size:clamp(30px,5vw,44px);letter-spacing:-.03em;line-height:1.05;margin:0}
+p.lede{color:var(--muted);margin:12px 0 28px}
+form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.f{display:flex;flex-direction:column;gap:6px;min-width:0}.full{grid-column:1/-1}
+label{font-size:14px;font-weight:600}.hint{font-weight:400;color:var(--muted)}
+input,textarea{font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--tile);color:var(--fg);width:100%}
+input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:32px}
+h2{font-size:20px;margin:0}
+button{font:inherit;font-size:14px;font-weight:600;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--tile);color:var(--fg);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+pre{background:var(--tile);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font:13.5px/1.6 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}
+.warn{color:#b4552e;font-size:14px}
+footer{margin-top:40px;color:var(--muted);font-size:14px}footer a{color:var(--accent)}
+@media (max-width:600px){form{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>llms.txt generator</h1>
+<p class="lede">Fill in your site details and key pages. The file is generated in your browser; nothing is sent anywhere.</p>
+<form id="lt-form" novalidate>
+  <div class="f"><label for="lt-name">Site or brand name</label><input id="lt-name" placeholder="Acme Analytics"></div>
+  <div class="f"><label for="lt-url">Website URL</label><input id="lt-url" type="url" placeholder="https://www.example.com"></div>
+  <div class="f full"><label for="lt-sum">One-sentence summary</label><input id="lt-sum" placeholder="Acme Analytics is a product analytics platform for B2B SaaS teams."></div>
+  <div class="f full"><label for="lt-det">More context <span class="hint">(optional)</span></label><textarea id="lt-det" rows="3"></textarea></div>
+  <div class="f"><label for="lt-s1">Section name</label><input id="lt-s1" value="Key pages"></div>
+  <div class="f full"><label for="lt-l1">Pages <span class="hint">one per line: Title | URL | description</span></label><textarea id="lt-l1" rows="5" placeholder="Pricing | https://www.example.com/pricing/ | Plans and what each includes"></textarea></div>
+  <div class="f"><label for="lt-s2">Second section name</label><input id="lt-s2" value="Resources"></div>
+  <div class="f full"><label for="lt-l2">Pages in the second section <span class="hint">(optional)</span></label><textarea id="lt-l2" rows="4"></textarea></div>
+  <div class="f full"><label for="lt-l3">Optional pages <span class="hint">(secondary pages)</span></label><textarea id="lt-l3" rows="3"></textarea></div>
+</form>
+<div class="bar"><h2>Your llms.txt</h2><div><button type="button" id="copy">Copy</button> <button type="button" class="primary" id="dl">Download llms.txt</button></div></div>
+<pre id="lt-out" aria-live="polite"></pre>
+<p class="warn" id="lt-warn" hidden></p>
+<footer>Open source (MIT) by <a href="https://aurumdigital.org">Aurum Digital</a>, the SEO and GEO agency. Hosted version: <a href="https://aurumdigital.org/tools/llms-txt-generator/">aurumdigital.org/tools/llms-txt-generator</a>.</footer>
+</main>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  function lines(id){return $(id).value.split(/\n/).map(function(l){return l.trim();}).filter(Boolean);}
+  function link(l){var p=l.split('|').map(function(x){return x.trim();});var t=p[0]||'',u=p[1]||'',d=p.slice(2).join(' | ');
+    if(!u&&/^https?:\/\//.test(t)){u=t;t=t.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'');}
+    return {ok:/^https?:\/\//.test(u),s:'- ['+t+']('+u+')'+(d?': '+d:'')};}
+  function section(name,id,out,bad){var ls=lines(id);if(!ls.length)return;out.push('','## '+(name||'Pages'),'');ls.forEach(function(l){var k=link(l);if(!k.ok)bad.push(l);out.push(k.s);});}
+  function render(){var out=[],bad=[];out.push('# '+($('lt-name').value.trim()||'Your brand'),'');
+    out.push('> '+($('lt-sum').value.trim()||'One-sentence summary of what you do and who you serve.'));
+    var d=$('lt-det').value.trim();if(d)out.push('',d);
+    var u=$('lt-url').value.trim();if(u)out.push('','Website: '+u);
+    section($('lt-s1').value.trim(),'lt-l1',out,bad);section($('lt-s2').value.trim(),'lt-l2',out,bad);section('Optional','lt-l3',out,bad);
+    $('lt-out').textContent=out.join('\n')+'\n';
+    var w=$('lt-warn');if(bad.length){w.hidden=false;w.textContent='Check these lines: each needs a full URL starting with https://. '+bad.slice(0,3).join(' · ');}else{w.hidden=true;}}
+  function done(b){var l=b.textContent;b.textContent='Copied';setTimeout(function(){b.textContent=l;},1500);}
+  $('copy').addEventListener('click',function(){var b=this,t=$('lt-out').textContent;
+    if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){done(b);});}});
+  $('dl').addEventListener('click',function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([$('lt-out').textContent],{type:'text/plain'}));a.download='llms.txt';document.body.appendChild(a);a.click();a.remove();});
+  $('lt-form').addEventListener('input',render);render();
+})();
+</script>
+</body>
+</html>
